@@ -1,19 +1,280 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="hi">
 <head>
-    <title>The Rock PDF Converter</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Rock PDF Converter</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#f3f4f6;
+    color:#222;
+}
+
+header{
+    background:#111827;
+    color:white;
+    text-align:center;
+    padding:22px 10px;
+}
+
+header h1{
+    margin:0;
+    font-size:28px;
+}
+
+header p{
+    margin:8px 0 0;
+    color:#d1d5db;
+}
+
+.container{
+    max-width:700px;
+    margin:25px auto;
+    padding:15px;
+}
+
+.upload-box{
+    background:white;
+    border:2px dashed #777;
+    border-radius:15px;
+    padding:35px 15px;
+    text-align:center;
+}
+
+.upload-box input{
+    margin-top:15px;
+    width:100%;
+}
+
+#preview{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:15px;
+    margin-top:20px;
+}
+
+.photo{
+    background:white;
+    padding:10px;
+    border-radius:12px;
+    box-shadow:0 2px 8px #ccc;
+}
+
+.photo img{
+    width:100%;
+    height:180px;
+    object-fit:contain;
+    background:#eee;
+    border-radius:8px;
+}
+
+.photo button{
+    margin-top:8px;
+    padding:8px;
+    width:100%;
+    border:0;
+    border-radius:8px;
+    background:#dc2626;
+    color:white;
+}
+
+#convert{
+    width:100%;
+    margin-top:25px;
+    padding:16px;
+    border:0;
+    border-radius:10px;
+    background:#16a34a;
+    color:white;
+    font-size:18px;
+    font-weight:bold;
+}
+
+#convert:disabled{
+    background:#999;
+}
+
+@media(max-width:500px){
+    #preview{
+        grid-template-columns:1fr;
+    }
+}
+</style>
 </head>
-<body style="font-family:Arial;text-align:center;margin-top:50px;">
 
-    <h1>The Rock PDF Converter</h1>
+<body>
 
-    <p>Photo to PDF Converter Website</p>
+<header>
+    <h1>THE ROCK PDF CONVERTER</h1>
+    <p>Photo ko PDF mein badlein</p>
+</header>
 
-    <input type="file" multiple accept="image/*">
+<div class="container">
 
-    <br><br>
+    <div class="upload-box">
+        <h2>📷 Photos Select Karein</h2>
+        <p>JPG, JPEG aur PNG photos select karein</p>
 
-    <button>Convert to PDF</button>
+        <input id="photos" type="file" accept="image/jpeg,image/png" multiple>
+    </div>
+
+    <div id="preview"></div>
+
+    <button id="convert" disabled>
+        📄 Convert to PDF
+    </button>
+
+</div>
+
+<script>
+
+const input = document.getElementById("photos");
+const preview = document.getElementById("preview");
+const convertBtn = document.getElementById("convert");
+
+let files = [];
+
+input.addEventListener("change", function(){
+
+    files = Array.from(this.files);
+
+    showPreview();
+
+});
+
+function showPreview(){
+
+    preview.innerHTML = "";
+
+    files.forEach((file,index)=>{
+
+        const reader = new FileReader();
+
+        reader.onload = function(e){
+
+            const div = document.createElement("div");
+
+            div.className = "photo";
+
+            div.innerHTML = `
+                <img src="${e.target.result}">
+                <button onclick="removePhoto(${index})">
+                    🗑️ Delete
+                </button>
+            `;
+
+            preview.appendChild(div);
+
+        };
+
+        reader.readAsDataURL(file);
+
+    });
+
+    convertBtn.disabled = files.length === 0;
+}
+
+function removePhoto(index){
+
+    files.splice(index,1);
+
+    showPreview();
+
+}
+
+convertBtn.addEventListener("click", async function(){
+
+    if(files.length === 0){
+        alert("Pehle photo select karein");
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+
+    const pdf = new jsPDF({
+        orientation:"portrait",
+        unit:"mm",
+        format:"a4"
+    });
+
+    for(let i=0;i<files.length;i++){
+
+        const file = files[i];
+
+        const imageData = await readFile(file);
+
+        const img = new Image();
+
+        img.src = imageData;
+
+        await new Promise(resolve => {
+            img.onload = resolve;
+        });
+
+        const pageWidth = 210;
+        const pageHeight = 297;
+
+        const margin = 10;
+
+        let width = pageWidth - margin*2;
+        let height = img.height * width / img.width;
+
+        if(height > pageHeight - margin*2){
+
+            height = pageHeight - margin*2;
+
+            width = img.width * height / img.height;
+
+        }
+
+        const x = (pageWidth - width) / 2;
+        const y = (pageHeight - height) / 2;
+
+        if(i > 0){
+            pdf.addPage();
+        }
+
+        const format = file.type === "image/png" ? "PNG" : "JPEG";
+
+        pdf.addImage(
+            imageData,
+            format,
+            x,
+            y,
+            width,
+            height
+        );
+    }
+
+    pdf.save("The-Rock-PDF-Converter.pdf");
+
+});
+
+function readFile(file){
+
+    return new Promise((resolve,reject)=>{
+
+        const reader = new FileReader();
+
+        reader.onload = () => resolve(reader.result);
+
+        reader.onerror = reject;
+
+        reader.readAsDataURL(file);
+
+    });
+
+}
+
+</script>
 
 </body>
-</html>
+    </html>
