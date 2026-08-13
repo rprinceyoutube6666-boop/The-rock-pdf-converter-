@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://rprinceyoutube6666-boop.github.io/The-rock-pdf-converter-/sitemap.xml
